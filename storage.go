@@ -2,8 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"os"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -19,9 +22,32 @@ type DatabaseStore struct {
 }
 
 func NewDatabaseStore() (*DatabaseStore, error) {
-	connStr := "postgres://michaeldakin:5wiNuhIVqp8B@ep-nameless-wood-619835.ap-southeast-1.aws.neon.tech/neondb"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Failed to load .env file")
+	}
+	fmt.Println("Imported .env file")
+
+	connStr := os.Getenv("DB_CONN")
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Query("SELECT * from playing_with_neon")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(rows)
+	return &DatabaseStore{
+		db: db,
+	}, nil
+}
+
+func (s *DatabaseStore) CreateAccount(*Account) error {
+	return nil
 }
