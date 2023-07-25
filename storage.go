@@ -37,12 +37,6 @@ func NewDatabaseStore() (*DatabaseStore, error) {
 		fmt.Printf("Successfully connected to database: %s\n", connStr)
 	}
 
-	//rows, err := db.Query("SELECT * from playing_with_neon")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//fmt.Println(rows)
-
 	return &DatabaseStore{
 		db: db,
 	}, nil
@@ -69,6 +63,7 @@ func (s *DatabaseStore) createAccountTable() error {
 }
 
 func (s *DatabaseStore) CreateAccount(acc *Account) error {
+	// POST /account
 	// Basic account creation with POST request
 	// ID will autoincrement
 	// Email must be unique
@@ -105,6 +100,7 @@ func (s *DatabaseStore) DeleteAccount(id int) error {
 	return nil
 }
 
+// GET /account
 func (s *DatabaseStore) GetAccounts() ([]*Account, error) {
 	rows, err := s.db.Query("SELECT * FROM accounts")
 	if err != nil {
@@ -113,27 +109,31 @@ func (s *DatabaseStore) GetAccounts() ([]*Account, error) {
 
 	accounts := []*Account{}
 	for rows.Next() {
-		account := new(Account)
-		err := rows.Scan(
-			&account.ID,
-			&account.FirstName,
-			&account.LastName,
-			&account.Email,
-			&account.Number,
-			&account.Balance,
-			&account.CreatedAt,
-			&account.UpdatedAt,
-		)
+		account, err := scanIntoAccount(rows)
 		if err != nil {
 			return nil, err
 		}
-
 		accounts = append(accounts, account)
 	}
-
 	return accounts, nil
 }
 
+// GET /accounts/:id
 func (s *DatabaseStore) GetAccountByID(id int) (*Account, error) {
 	return nil, nil
+}
+
+func scanIntoAccount(rows *sql.Rows) (*Account, error) {
+	account := new(Account)
+	err := rows.Scan(
+		&account.ID,
+		&account.FirstName,
+		&account.LastName,
+		&account.Email,
+		&account.Number,
+		&account.Balance,
+		&account.CreatedAt,
+		&account.UpdatedAt,
+	)
+	return account, err
 }
