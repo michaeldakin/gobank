@@ -14,6 +14,7 @@ type Storage interface {
 	CreateAccount(*Account) error
 	DeleteAccount(int) error
 	UpdateAccount(*Account) error
+	GetAccounts() ([]*Account, error)
 	GetAccountByID(int) (*Account, error)
 }
 
@@ -60,7 +61,7 @@ func (s *DatabaseStore) createAccountTable() error {
 				number SERIAL UNIQUE,
 				balance DECIMAL,
 				created_at TIMESTAMP,
-				updated_at TIMESTAMP DEFAULT NULL
+				last_updated TIMESTAMP DEFAULT NULL
 			)`
 
 	_, err := s.db.Exec(query)
@@ -73,16 +74,18 @@ func (s *DatabaseStore) CreateAccount(acc *Account) error {
 	// Email must be unique
 	// Number must be unique
 	query := `
-		INSERT INTO accounts (first_name, last_name, number, balance, created_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO accounts (first_name, last_name, email, number, balance, created_at, last_updated)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	resp, err := s.db.Exec(
 		query,
 		acc.FirstName,
 		acc.LastName,
+		acc.Email,
 		acc.Number,
 		acc.Balance,
 		acc.CreatedAt,
+		acc.UpdatedAt,
 	)
 
 	if err != nil {
@@ -93,12 +96,44 @@ func (s *DatabaseStore) CreateAccount(acc *Account) error {
 
 	return nil
 }
+
 func (s *DatabaseStore) UpdateAccount(*Account) error {
 	return nil
 }
+
 func (s *DatabaseStore) DeleteAccount(id int) error {
 	return nil
 }
+
+func (s *DatabaseStore) GetAccounts() ([]*Account, error) {
+	rows, err := s.db.Query("SELECT * FROM accounts")
+	if err != nil {
+		return nil, err
+	}
+
+	accounts := []*Account{}
+	for rows.Next() {
+		account := new(Account)
+		err := rows.Scan(
+			&account.ID,
+			&account.FirstName,
+			&account.LastName,
+			&account.Email,
+			&account.Number,
+			&account.Balance,
+			&account.CreatedAt,
+			&account.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		accounts = append(accounts, account)
+	}
+
+	return accounts, nil
+}
+
 func (s *DatabaseStore) GetAccountByID(id int) (*Account, error) {
 	return nil, nil
 }
