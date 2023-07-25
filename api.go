@@ -61,6 +61,10 @@ func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) err
 }
 
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
+	createAccountRequest := CreateAccountRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&createAccountRequest); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -69,7 +73,9 @@ func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
-	w.Header().Add("Content-Type", "application/json; charset=utf-8")
+	// ResponseWriter needs to be set before WriteHeader
+	// https://github.com/dimfeld/httptreemux/issues/47#issuecomment-287659058
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(v)
 }
