@@ -36,11 +36,12 @@ func NewDatabaseStore() (*DatabaseStore, error) {
 		fmt.Printf("Successfully connected to database: %s\n", connStr)
 	}
 
-	rows, err := db.Query("SELECT * from playing_with_neon")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(rows)
+	//rows, err := db.Query("SELECT * from playing_with_neon")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//fmt.Println(rows)
+
 	return &DatabaseStore{
 		db: db,
 	}, nil
@@ -56,17 +57,40 @@ func (s *DatabaseStore) createAccountTable() error {
 				first_name TEXT,
 				last_name TEXT,
 				email TEXT UNIQUE,
-				number SERIAL,
+				number SERIAL UNIQUE,
 				balance DECIMAL,
 				created_at TIMESTAMP,
-				updated_at TIMESTAMP
+				updated_at TIMESTAMP DEFAULT NULL
 			)`
 
 	_, err := s.db.Exec(query)
 	return err
 }
 
-func (s *DatabaseStore) CreateAccount(*Account) error {
+func (s *DatabaseStore) CreateAccount(acc *Account) error {
+	// Basic account creation with POST request
+	// ID will autoincrement
+	// Email must be unique
+	// Number must be unique
+	query := `
+		INSERT INTO accounts (first_name, last_name, number, balance, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	resp, err := s.db.Exec(
+		query,
+		acc.FirstName,
+		acc.LastName,
+		acc.Number,
+		acc.Balance,
+		acc.CreatedAt,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%+v\n", resp)
+
 	return nil
 }
 func (s *DatabaseStore) UpdateAccount(*Account) error {
