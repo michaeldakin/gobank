@@ -87,10 +87,12 @@ func (s *DatabaseStore) CreateAccount(acc *Account) error {
 	return nil
 }
 
+// PATCH /account
 func (s *DatabaseStore) UpdateAccount(*Account) error {
 	return nil
 }
 
+// DELETE /account/:id
 func (s *DatabaseStore) DeleteAccount(id int) error {
 	return nil
 }
