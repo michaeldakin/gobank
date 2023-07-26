@@ -40,16 +40,17 @@ func (s *DatabaseStore) Init() error {
 }
 
 func (s *DatabaseStore) createAccountTable() error {
-	query := `CREATE TABLE IF NOT EXISTS accounts (
-				id INTEGER PRIMARY KEY,
-				first_name TEXT,
-				last_name TEXT,
-				email TEXT UNIQUE,
-				number REAL UNIQUE,
-				balance REAL,
-				created_at INTEGER,
-				last_updated INTEGER DEFAULT NULL
-			)`
+	query := `
+		CREATE TABLE IF NOT EXISTS accounts (
+			id INTEGER PRIMARY KEY,
+			first_name TEXT,
+			last_name TEXT,
+			email TEXT UNIQUE,
+			number REAL UNIQUE,
+			balance REAL,
+			created_at DATETIME,
+			last_updated DATETIME DEFAULT NULL
+		)`
 
 	_, err := s.db.Exec(query)
 	fmt.Println("Created table accounts")
