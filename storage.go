@@ -120,7 +120,14 @@ func (s *DatabaseStore) GetAccounts() ([]*Account, error) {
 
 // GET /accounts/:id
 func (s *DatabaseStore) GetAccountByID(id int) (*Account, error) {
-	return nil, nil
+	rows, err := s.db.Query("SELECT * FROM accounts WHERE id=$1", id)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		return scanIntoAccount(rows)
+	}
+	return nil, fmt.Errorf("Account %d not found", id)
 }
 
 func scanIntoAccount(rows *sql.Rows) (*Account, error) {

@@ -71,6 +71,7 @@ func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request)
 	return WriteJSON(w, http.StatusOK, &Account{})
 }
 
+// POST /accounts
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
 	createAccountRequest := new(CreateAccountRequest)
 	if err := json.NewDecoder(r.Body).Decode(createAccountRequest); err != nil {
