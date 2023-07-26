@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/joho/godotenv"
+	_ "github.com/glebarez/go-sqlite"
 	_ "github.com/lib/pq"
 )
 
@@ -23,18 +22,12 @@ type DatabaseStore struct {
 }
 
 func NewDatabaseStore() (*DatabaseStore, error) {
-	err := godotenv.Load()
+	dbfile := "gobank.db"
+	db, err := sql.Open("sqlite", dbfile)
 	if err != nil {
-		log.Fatal("Failed to load .env file")
-	}
-	fmt.Println("Imported database .env file")
-
-	connStr := os.Getenv("DB_CONN")
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to open database :", err)
 	} else {
-		fmt.Printf("Successfully connected to database: %s\n", connStr)
+		fmt.Printf("Successfully read database file\n")
 	}
 
 	return &DatabaseStore{
@@ -48,17 +41,18 @@ func (s *DatabaseStore) Init() error {
 
 func (s *DatabaseStore) createAccountTable() error {
 	query := `CREATE TABLE IF NOT EXISTS accounts (
-				id SERIAL PRIMARY KEY,
+				id INTEGER PRIMARY KEY,
 				first_name TEXT,
 				last_name TEXT,
 				email TEXT UNIQUE,
-				number SERIAL UNIQUE,
-				balance DECIMAL,
-				created_at TIMESTAMP,
-				last_updated TIMESTAMP DEFAULT NULL
+				number REAL UNIQUE,
+				balance REAL,
+				created_at INTEGER,
+				last_updated INTEGER DEFAULT NULL
 			)`
 
 	_, err := s.db.Exec(query)
+	fmt.Println("Created table accounts")
 	return err
 }
 
