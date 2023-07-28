@@ -6,11 +6,10 @@ Following a guide by Anthony GG.
 ## What do I want to get out of this
 A good understanding of Go, how to create stable APIs which can be handled by a seperate frontend and implement authentication with JWT.
 
-## env
+## Database
 This branch was changed from Postgres to sqlite3 database named "gobank.db".
 
 The package glebarez/go-sqlite is used which is CGo free.
-
 
 ## Makefile
 This project uses a basic makefile for now.
