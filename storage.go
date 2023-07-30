@@ -96,6 +96,7 @@ func (s *DatabaseStore) UpdateAccount(*Account) error {
 // This is a HARD delete of data
 // TODO: create soft delete functionality - is_active or is_deleted column?
 func (s *DatabaseStore) DeleteAccount(id int) error {
+	fmt.Printf("deleting ID %d\n", id)
 	_, err := s.db.Query("DELETE FROM accounts WHERE id = $1", id)
 	return err
 }
