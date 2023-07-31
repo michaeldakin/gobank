@@ -36,10 +36,10 @@ func NewDatabaseStore() (*DatabaseStore, error) {
 }
 
 func (s *DatabaseStore) Init() error {
-	return s.createAccountTable()
+	return s.createAccountsTable()
 }
 
-func (s *DatabaseStore) createAccountTable() error {
+func (s *DatabaseStore) createAccountsTable() error {
 	query := `
 		CREATE TABLE IF NOT EXISTS accounts (
 			id INTEGER PRIMARY KEY,
