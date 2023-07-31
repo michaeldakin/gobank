@@ -50,17 +50,6 @@ func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
-// GET /account
-func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
-	accounts, err := s.store.GetAccounts()
-	if err != nil {
-		return err
-	}
-
-	return WriteJSON(w, http.StatusOK, accounts)
-}
-
-// GET /account/:id
 func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
 		id, err := getID(r)
@@ -70,7 +59,7 @@ func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request)
 
 		account, err := s.store.GetAccountByID(id)
 		if err != nil {
-			return err
+			return WriteJSON(w, http.StatusForbidden, err)
 		}
 
 		return WriteJSON(w, http.StatusOK, account)
@@ -81,6 +70,16 @@ func (s *APIServer) handleGetAccountByID(w http.ResponseWriter, r *http.Request)
 	}
 
 	return fmt.Errorf("method not allowed %s", r.Method)
+}
+
+// GET /account
+func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
+	accounts, err := s.store.GetAccounts()
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, accounts)
 }
 
 // POST /accounts

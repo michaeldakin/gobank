@@ -53,7 +53,6 @@ func (s *DatabaseStore) createAccountTable() error {
 		)`
 
 	_, err := s.db.Exec(query)
-	fmt.Println("Created table accounts")
 	return err
 }
 
@@ -96,14 +95,13 @@ func (s *DatabaseStore) UpdateAccount(*Account) error {
 // This is a HARD delete of data
 // TODO: create soft delete functionality - is_active or is_deleted column?
 func (s *DatabaseStore) DeleteAccount(id int) error {
-	fmt.Printf("deleting ID %d\n", id)
-	_, err := s.db.Query("DELETE FROM accounts WHERE id = $1", id)
+	_, err := s.db.Exec(`DELETE FROM accounts WHERE id = $1`, id)
 	return err
 }
 
 // GET /account
 func (s *DatabaseStore) GetAccounts() ([]*Account, error) {
-	rows, err := s.db.Query("SELECT * FROM accounts")
+	rows, err := s.db.Query(`SELECT * FROM accounts`)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +119,7 @@ func (s *DatabaseStore) GetAccounts() ([]*Account, error) {
 
 // GET /accounts/:id
 func (s *DatabaseStore) GetAccountByID(id int) (*Account, error) {
-	rows, err := s.db.Query("SELECT * FROM accounts WHERE id = $1", id)
+	rows, err := s.db.Query(`SELECT * FROM accounts WHERE id = $1`, id)
 	if err != nil {
 		return nil, err
 	}
