@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/joho/godotenv"
+	_ "github.com/glebarez/go-sqlite"
 	_ "github.com/lib/pq"
 )
 
@@ -23,18 +22,12 @@ type DatabaseStore struct {
 }
 
 func NewDatabaseStore() (*DatabaseStore, error) {
-	err := godotenv.Load()
+	dbfile := "gobank.db"
+	db, err := sql.Open("sqlite", dbfile)
 	if err != nil {
-		log.Fatal("Failed to load .env file")
-	}
-	fmt.Println("Imported database .env file")
-
-	connStr := os.Getenv("DB_CONN")
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to open database :", err)
 	} else {
-		fmt.Printf("Successfully connected to database: %s\n", connStr)
+		fmt.Printf("Successfully read database file\n")
 	}
 
 	return &DatabaseStore{
@@ -43,20 +36,21 @@ func NewDatabaseStore() (*DatabaseStore, error) {
 }
 
 func (s *DatabaseStore) Init() error {
-	return s.createAccountTable()
+	return s.createAccountsTable()
 }
 
-func (s *DatabaseStore) createAccountTable() error {
-	query := `CREATE TABLE IF NOT EXISTS accounts (
-				id SERIAL PRIMARY KEY,
-				first_name TEXT,
-				last_name TEXT,
-				email TEXT UNIQUE,
-				number SERIAL UNIQUE,
-				balance DECIMAL,
-				created_at TIMESTAMP,
-				last_updated TIMESTAMP DEFAULT NULL
-			)`
+func (s *DatabaseStore) createAccountsTable() error {
+	query := `
+		CREATE TABLE IF NOT EXISTS accounts (
+			id INTEGER PRIMARY KEY,
+			first_name TEXT,
+			last_name TEXT,
+			email TEXT UNIQUE,
+			number REAL UNIQUE,
+			balance REAL,
+			created_at DATETIME,
+			last_updated DATETIME DEFAULT NULL
+		)`
 
 	_, err := s.db.Exec(query)
 	return err
@@ -92,17 +86,22 @@ func (s *DatabaseStore) CreateAccount(acc *Account) error {
 	return nil
 }
 
+// PATCH /account
 func (s *DatabaseStore) UpdateAccount(*Account) error {
 	return nil
 }
 
+// DELETE /account/:id
+// This is a HARD delete of data
+// TODO: create soft delete functionality - is_active or is_deleted column?
 func (s *DatabaseStore) DeleteAccount(id int) error {
-	return nil
+	_, err := s.db.Exec(`DELETE FROM accounts WHERE id = $1`, id)
+	return err
 }
 
 // GET /account
 func (s *DatabaseStore) GetAccounts() ([]*Account, error) {
-	rows, err := s.db.Query("SELECT * FROM accounts")
+	rows, err := s.db.Query(`SELECT * FROM accounts`)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +119,7 @@ func (s *DatabaseStore) GetAccounts() ([]*Account, error) {
 
 // GET /accounts/:id
 func (s *DatabaseStore) GetAccountByID(id int) (*Account, error) {
-	rows, err := s.db.Query("SELECT * FROM accounts WHERE id=$1", id)
+	rows, err := s.db.Query(`SELECT * FROM accounts WHERE id = $1`, id)
 	if err != nil {
 		return nil, err
 	}
