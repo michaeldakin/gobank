@@ -26,9 +26,8 @@ func NewDatabaseStore() (*DatabaseStore, error) {
 	db, err := sql.Open("sqlite", dbfile)
 	if err != nil {
 		log.Fatal("Failed to open database :", err)
-	} else {
-		fmt.Printf("Successfully read database file\n")
 	}
+	fmt.Printf("Successfully read database file\n")
 
 	return &DatabaseStore{
 		db: db,
@@ -56,6 +55,7 @@ func (s *DatabaseStore) createAccountsTable() error {
 	return err
 }
 
+// CreateAccount func - POST to create account in sqlite
 func (s *DatabaseStore) CreateAccount(acc *Account) error {
 	// POST /account
 	// Basic account creation with POST request

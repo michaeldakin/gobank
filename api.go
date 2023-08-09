@@ -1,3 +1,4 @@
+// Package main provides main
 package main
 
 import (
@@ -5,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 )
 
@@ -21,6 +24,7 @@ type APIError struct {
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
 
+// NewAPIServer function
 func NewAPIServer(listenAddr string, store Storage) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
@@ -30,15 +34,17 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
-
 	router.HandleFunc("/account", makeHTTPHandleFunc(s.handleAccount))
-	router.HandleFunc("/account/{id}", makeHTTPHandleFunc(s.handleGetAccountByID))
+	router.HandleFunc("/account/{id}", JWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID)))
+	router.HandleFunc("/transfer", makeHTTPHandleFunc(s.handleTransfer))
 
 	log.Println("Server running on port", s.listenAddr)
 
 	http.ListenAndServe(s.listenAddr, router)
 }
 
+// **********
+// Handlers
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
 		return s.handleGetAccount(w, r)
@@ -110,14 +116,19 @@ func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) 
 	return WriteJSON(w, http.StatusOK, map[string]int{"deleted": id})
 }
 
-func WriteJSON(w http.ResponseWriter, status int, v any) error {
-	// ResponseWriter needs to be set before WriteHeader
-	// https://github.com/dimfeld/httptreemux/issues/47#issuecomment-287659058
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
+func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
+	transferReq := new(TransferRequest)
+	if err := json.NewDecoder(r.Body).Decode(transferReq); err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	return WriteJSON(w, http.StatusOK, transferReq)
 }
 
+// ****************
+// Main functions
+// ****************
 func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
@@ -126,8 +137,15 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	}
 }
 
-func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
-	return nil
+func WriteJSON(w http.ResponseWriter, status int, v any) error {
+	// ResponseWriter needs to be set before WriteHeader
+	// https://github.com/dimfeld/httptreemux/issues/47#issuecomment-287659058
+
+	// http: superfluous response. WriteHeader call from main. WriteJSON (api. go: 144)
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	return json.NewEncoder(w).Encode(v)
 }
 
 func getID(r *http.Request) (int, error) {
@@ -137,4 +155,35 @@ func getID(r *http.Request) (int, error) {
 		return id, fmt.Errorf("Invalid ID given %s", idStr)
 	}
 	return id, nil
+}
+
+func permissionDenied(w http.ResponseWriter) {
+	WriteJSON(w, http.StatusForbidden, APIError{Error: "permission denied"})
+}
+
+func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("calling JWTAuth middleware")
+
+		tokenString := r.Header.Get("x-jwt-header")
+		_, err := validateJWT(tokenString)
+		if err != nil {
+			permissionDenied(w)
+			return
+		}
+
+		handlerFunc(w, r)
+	}
+}
+
+func validateJWT(tokenString string) (*jwt.Token, error) {
+	secret := os.Getenv("JWT_SECRET")
+
+	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return []byte(secret), nil
+	})
 }
