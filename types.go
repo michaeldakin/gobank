@@ -33,6 +33,7 @@ type Account struct {
 	Email     string    `json:"email"`
 	Number    int64     `json:"number"`
 	Balance   int64     `json:"balance"`
+	IsActive  int       `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"last_updated"`
 }
@@ -48,6 +49,7 @@ func NewAccount(firstName, lastName, email string) *Account {
 		LastName:  lastName,
 		Email:     email,
 		Number:    int64(rand.Intn(100000)), //account number
+		IsActive:  1,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	}

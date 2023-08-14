@@ -47,6 +47,7 @@ func (s *DatabaseStore) createAccountsTable() error {
 			email TEXT UNIQUE,
 			number REAL UNIQUE,
 			balance REAL,
+			is_active INTEGER,
 			created_at DATETIME,
 			last_updated DATETIME DEFAULT NULL
 		)`
@@ -63,8 +64,8 @@ func (s *DatabaseStore) CreateAccount(acc *Account) error {
 	// Email must be unique
 	// Number must be unique
 	query := `
-		INSERT INTO accounts (first_name, last_name, email, number, balance, created_at, last_updated)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO accounts (first_name, last_name, email, number, balance, is_active, created_at, last_updated)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	resp, err := s.db.Exec(
 		query,
@@ -73,6 +74,7 @@ func (s *DatabaseStore) CreateAccount(acc *Account) error {
 		acc.Email,
 		acc.Number,
 		acc.Balance,
+		acc.IsActive,
 		acc.CreatedAt,
 		acc.UpdatedAt,
 	)
@@ -138,6 +140,7 @@ func scanIntoAccount(rows *sql.Rows) (*Account, error) {
 		&account.Email,
 		&account.Number,
 		&account.Balance,
+		&account.IsActive,
 		&account.CreatedAt,
 		&account.UpdatedAt,
 	)
