@@ -100,6 +100,11 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
+	tokenString, err := createJWT(account)
+	if err != nil {
+		return err
+	}
+
 	return WriteJSON(w, http.StatusOK, account)
 }
 
@@ -154,6 +159,7 @@ func getID(r *http.Request) (int, error) {
 	if err != nil {
 		return id, fmt.Errorf("Invalid ID given %s", idStr)
 	}
+
 	return id, nil
 }
 
@@ -161,17 +167,16 @@ func permissionDenied(w http.ResponseWriter) {
 	WriteJSON(w, http.StatusForbidden, APIError{Error: "permission denied"})
 }
 
+// Used to authenticate handlers with JWT token
+// Generate user token with createJWT
 func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("calling JWTAuth middleware")
-
 		tokenString := r.Header.Get("x-jwt-header")
 		_, err := validateJWT(tokenString)
 		if err != nil {
 			permissionDenied(w)
 			return
 		}
-
 		handlerFunc(w, r)
 	}
 }
@@ -186,4 +191,16 @@ func validateJWT(tokenString string) (*jwt.Token, error) {
 
 		return []byte(secret), nil
 	})
+}
+
+func createJWT(account *Account) (string, error) {
+	claims := &jwt.MapClaims{
+		"expiresAt":     15000,
+		"accountNumber": account.Number,
+	}
+
+	secret := os.Getenv("JWT_SECRET")
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte(secret))
 }
