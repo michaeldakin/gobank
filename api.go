@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 )
 
@@ -43,8 +43,9 @@ func (s *APIServer) Run() {
 	http.ListenAndServe(s.listenAddr, router)
 }
 
-// **********
+// ****************
 // Handlers
+// ****************
 func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
 		return s.handleGetAccount(w, r)
@@ -97,11 +98,6 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 
 	account := NewAccount(createAccountRequest.FirstName, createAccountRequest.LastName, createAccountRequest.Email)
 	if err := s.store.CreateAccount(account); err != nil {
-		return err
-	}
-
-	tokenString, err := createJWT(account)
-	if err != nil {
 		return err
 	}
 
@@ -169,14 +165,28 @@ func permissionDenied(w http.ResponseWriter) {
 
 // Used to authenticate handlers with JWT token
 // Generate user token with createJWT
+// token:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50TnVtYmVyIjozNTk1OSwiZXhwaXJlc0F0IjoxNTAwMH0.eXUn5hM1gngdkDdx2y6QTeIzSL39_92Azz25hqZoRV8
+// map[accountNumber:35959 expiresAt:15000]
 func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("x-jwt-header")
-		_, err := validateJWT(tokenString)
+		token, err := validateJWT(tokenString)
 		if err != nil {
 			permissionDenied(w)
 			return
 		}
+
+		if !token.Valid {
+			permissionDenied(w)
+			return
+		}
+
+		// insert token into DB
+		// account, err :=
+
+		claims := token.Claims.(jwt.MapClaims)
+		fmt.Println(claims)
+
 		handlerFunc(w, r)
 	}
 }
