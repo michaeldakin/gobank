@@ -24,7 +24,6 @@ type APIError struct {
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
 
-// NewAPIServer function
 func NewAPIServer(listenAddr string, store Storage) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
@@ -34,8 +33,9 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
+
 	router.HandleFunc("/account", makeHTTPHandleFunc(s.handleAccount))
-	router.HandleFunc("/account/{id}", JWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID)))
+	router.HandleFunc("/account/{id}", JWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID), s.store))
 	router.HandleFunc("/transfer", makeHTTPHandleFunc(s.handleTransfer))
 
 	log.Println("Server running on port", s.listenAddr)
@@ -167,7 +167,8 @@ func permissionDenied(w http.ResponseWriter) {
 // Generate user token with createJWT
 // token:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50TnVtYmVyIjozNTk1OSwiZXhwaXJlc0F0IjoxNTAwMH0.eXUn5hM1gngdkDdx2y6QTeIzSL39_92Azz25hqZoRV8
 // map[accountNumber:35959 expiresAt:15000]
-func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
+
+func JWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("x-jwt-header")
 		token, err := validateJWT(tokenString)
@@ -181,11 +182,27 @@ func JWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// insert token into DB
-		// account, err :=
+		userID, err := getID(r)
+		if err != nil {
+			permissionDenied(w)
+			return
+		}
+
+		account, err := s.GetAccountByID(userID)
+		if err != nil {
+			permissionDenied(w)
+			return
+		}
 
 		claims := token.Claims.(jwt.MapClaims)
-		fmt.Println(claims)
+		if account.Number != int64(claims["accountNumber"].(float64)) {
+			permissionDenied(w)
+			return
+		}
+
+		if err != nil {
+			WriteJSON(w, http.StatusForbidden, APIError{Error: "invalid token"})
+		}
 
 		handlerFunc(w, r)
 	}
