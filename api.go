@@ -1,4 +1,3 @@
-// Package main provides main
 package main
 
 import (
@@ -7,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 
 	jwt "github.com/golang-jwt/jwt/v4"
@@ -159,6 +159,7 @@ func getID(r *http.Request) (int, error) {
 	return id, nil
 }
 
+// This would be where we add logger (slog, zap etc)
 func permissionDenied(w http.ResponseWriter) {
 	WriteJSON(w, http.StatusForbidden, APIError{Error: "permission denied"})
 }
@@ -195,6 +196,7 @@ func JWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
+		panic(reflect.TypeOf(claims["accountNumber"]))
 		if account.Number != int64(claims["accountNumber"].(float64)) {
 			permissionDenied(w)
 			return
